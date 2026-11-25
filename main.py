@@ -7,6 +7,7 @@ when it has no idea what to do.
 import os
 
 ENTRY = "recalculating"
+OUTPUT_PATH = "/output/entry.txt"
 
 
 def validate(word: str) -> None:
@@ -19,9 +20,19 @@ def validate(word: str) -> None:
 
 def main() -> None:
     validate(ENTRY)
-    os.makedirs("/output", exist_ok=True)
-    with open("/output/entry.txt", "w", encoding="utf-8") as f:
+    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write(ENTRY)
+        f.flush()
+        os.fsync(f.fileno())
+    # Read back and fail loudly if the file on disk is not byte-identical.
+    with open(OUTPUT_PATH, "rb") as f:
+        written = f.read()
+    if written != ENTRY.encode("utf-8"):
+        raise RuntimeError(
+            f"entry.txt mismatch: expected {ENTRY.encode('utf-8')!r}, "
+            f"got {written!r}"
+        )
 
 
 if __name__ == "__main__":
